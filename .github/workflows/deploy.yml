@@ -5,7 +5,7 @@ on: workflow_dispatch
 env:
   IMAGE_NAME: trisf
   HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-  HEROKU_APP: ${{ secrets.HEROKU_APP }}
+  HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
 
 jobs:
   build_and_push:
@@ -21,7 +21,16 @@ jobs:
         run: heroku container:login
 
       - name: Push the image to Heroku
-        run: heroku container:push $IMAGE_NAME -a $HEROKU_APP
+        run: heroku container:push $IMAGE_NAME -a $HEROKU_APP_NAME
         
       - name: Release image to Heroku
-        run: heroku container:release $IMAGE_NAME -a $HEROKU_APP
+        run: heroku container:release $IMAGE_NAME -a $HEROKU_APP_NAME
+
+      - name: Check ENV
+        run: |
+          API_KEY="$(heroku config:get HEROKU_API_KEY -a ${HEROKU_APP_NAME})"
+          APP_NAME="$(heroku config:get HEROKU_APP_NAME -a ${HEROKU_APP_NAME})"
+          if [[ -z "${API_KEY}" && -z "${APP_NAME}" ]]; then
+              heroku config:set HEROKU_API_KEY="${HEROKU_API_KEY}" \
+              HEROKU_APP_NAME="${HEROKU_APP_NAME}"
+          fi
